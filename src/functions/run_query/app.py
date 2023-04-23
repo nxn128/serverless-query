@@ -1,8 +1,13 @@
+import json
+from datetime import date, datetime
 from duckdb import DuckDBPyConnection, connect
 
 DEFAULT_ROWS = 10
 MAX_ROWS = 1000
 
+# Global scope is shared across lambdas while warm
+# The db connection is global to improve performance
+# when multiple queries come in during a short window
 db_conn: DuckDBPyConnection = None
 
 
@@ -23,7 +28,21 @@ class Query:
         return self._limit
 
 
+def results_serializer(data):
+    """
+    Converts datetimes to ISO date strings to prevent
+    serialization errors
+    """
+    if isinstance(data, (datetime, date)):
+        # TODO: timezone concerns?
+        return data.isoformat()
+    raise TypeError("Type %s not serializable" % type(data))
+
+
 def ensure_db_connected():
+    """
+    Ensures there is a valid db connection.
+    """
     global db_conn
     if db_conn is None:
         db_conn = connect(database=':memory:')
@@ -46,7 +65,7 @@ def lambda_handler(event: dict, _) -> list:
         query = Query(event.get('query', None),
                       event.get('limit', DEFAULT_ROWS))
         ensure_db_connected()
-        return run_query(query)
+        return json.dumps(run_query(query), default=results_serializer)
 
     except Exception as e:
         print(f'error running query: {e}')
