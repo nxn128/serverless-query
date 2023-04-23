@@ -59,7 +59,13 @@ SET s3_region='us-east-2';
 
 def run_query(query: Query) -> list:
     print(f'executing query: {query.sql} with row limit: {query.limit}')
-    return db_conn.execute(query.sql).fetchmany(query.limit)
+    raw = db_conn.execute(query.sql)
+    res = raw.fetchmany(query.limit)
+    cols = [x[0] for x in raw.description]
+    # add column names to end because it's faster
+    # than inserting in the beginning
+    res.append(cols)
+    return res
 
 
 def lambda_handler(event: dict, _) -> list:
