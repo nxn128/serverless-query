@@ -5,10 +5,12 @@ Serverless Query CLI
 import boto3
 import click
 import json
+from rich.console import Console
+from rich.table import Table
 
 MAX_ROWS = 1000
 
-# from:
+
 # https://docs.aws.amazon.com/code-library/latest/ug/python_3_lambda_code_examples.html
 class LambdaWrapper:
     def __init__(self, lambda_client, iam_resource):
@@ -57,8 +59,13 @@ def query(query, limit):
         "serverless-query-RunQueryFunction",
         data,
         True)
-    payload = json.loads(res['Payload'].read())
-    print(payload)
+    payload = json.loads(json.loads(res['Payload'].read()))
+
+    result_table = Table(show_header=False)
+    for row in payload:
+        result_table.add_row(*[str(x) for x in row])
+    console = Console()
+    console.print(result_table)
 
 
 if __name__ == '__main__':
