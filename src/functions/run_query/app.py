@@ -48,6 +48,8 @@ def ensure_db_connected():
         db_conn = connect(database=':memory:')
         # note we do not need to set aws creds because
         # lambda has correct context and IAM roles
+        # commands here are per:
+        # https://duckdb.org/docs/guides/import/s3_import.html
         db_conn.execute("""
 INSTALL httpfs;
 LOAD httpfs;
