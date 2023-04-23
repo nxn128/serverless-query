@@ -63,9 +63,9 @@ def run_query(query: Query) -> dict:
     raw = db_conn.execute(query.sql)
     start = time.time_ns()
     res = raw.fetchmany(query.limit)
-    elapsed_ms = (time.time_ns() - start) / 10**6
+    elapsed_ms = (time.time_ns() - start) / 10**6  # convert from ns to ms
     res = {
-        "results": res,
+        "results": json.dumps(res, default=results_serializer),
         "column_names": [x[0] for x in raw.description],
         "query_ms": elapsed_ms
     }
@@ -77,7 +77,7 @@ def lambda_handler(event: dict, _) -> str:
         query = Query(event.get('query', None),
                       event.get('limit', DEFAULT_ROWS))
         ensure_db_connected()
-        return json.dumps(run_query(query), default=results_serializer)
+        return run_query(query)
 
     except Exception as e:
         print(f'error running query: {e}')

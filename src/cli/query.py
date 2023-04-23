@@ -4,6 +4,7 @@ Serverless Query CLI
 
 import boto3
 import click
+import csv
 import json
 from rich.console import Console
 from rich.table import Table
@@ -36,49 +37,95 @@ class LambdaWrapper:
                 FunctionName=function_name,
                 Payload=json.dumps(function_params),
                 LogType='Tail' if get_log else 'None')
-            console.print(f'Invoked function {function_name}', style="cyan")
         except boto3.ClientError:
-            console.print(f"Couldn't invoke function {function_name}")
+            console.print(f'Unable to invoke function {function_name}',
+                          style="bold red")
             raise
         return response
 
 
-@click.command()
-@click.option('--query', '-q', default="", help='SQL Query for execution')
-@click.option('--limit', '-l', default=10,
-              help='Number of rows to return, max 1000')
-def query(query, limit):
-    console.print(f'Executing query {query} with max rows returned = ' +
-                  f'{min(limit, MAX_ROWS)}', style="magenta")
+def invoke_lambda(query: str, limit: int) -> str:
     data = {
         'query': query,
-        'limit': limit
+        'limit': limit,
     }
+
     lambda_wrapper = LambdaWrapper(
         boto3.client('lambda'),
         boto3.resource('iam'))
-    res = lambda_wrapper.invoke_function(
-        "serverless-query-RunQueryFunction",
+
+    return lambda_wrapper.invoke_function(
+        'serverless-query-RunQueryFunction',
         data,
         True)
 
-    payload = json.loads(json.loads(res['Payload'].read()))
 
-    result_table = Table(
-        *payload['column_names'],
-        title="Query Results",
-        show_header=True,
-        show_lines=True,
-        row_styles=["bold yellow"])
+def write_to_stdout(payload: dict) -> bool:
+    try:
+        result_table = Table(
+            *payload['column_names'],
+            title='Query Results',
+            show_header=True,
+            show_lines=True,
+            row_styles=['bold yellow'],
+            header_style='bold')
 
-    for row in payload["results"]:
-        # ensure all data items are strings for printing
-        str_row_data = [str(x) for x in row]
-        result_table.add_row(*str_row_data)
+        for row in json.loads(payload['results']):
+            # ensure all data items are strings for printing
+            str_row_data = [str(x) for x in row]
+            result_table.add_row(*str_row_data)
 
-    console.print(result_table, justify='center')
-    console.print(f'query execution time: {payload["query_ms"]}ms',
+        console.print(result_table, justify='center')
+        return True
+    except Exception as e:
+        console.print(f'Error writing to stdout: {e}',
+                      style='bold red',
+                      highlight=False)
+        return False
+
+
+def write_to_csv(payload: dict, filename: str) -> bool:
+    try:
+        with open(filename, 'w') as f:
+            writer = csv.writer(f, delimiter=',',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(payload["column_names"])
+            writer.writerows(json.loads(payload['results']))
+        console.print(f'Output written to {filename}',
+                      style='bold green',
+                      highlight=False)
+        return True
+
+    except Exception as e:
+        console.print(f'Unable to write file ({filename}): {e}',
+                      style='bold red',
+                      highlight=False)
+        return False
+
+
+@click.command()
+@click.option('--query', '-q', default='', help='SQL Query for execution')
+@click.option('--limit', '-l', default=10,
+              help='Number of rows to return, max 1000')
+@click.option('--output', '-o', default=None, help='Output file (csv)')
+def query(query: str, limit: int, output: str):
+    console.print(f'Executing query {query} with max rows returned = ' +
+                  f'{min(limit, MAX_ROWS)}',
+                  style='bold blue',
                   highlight=False)
+
+    res = invoke_lambda(query, limit)
+
+    payload = json.loads(res['Payload'].read())
+    success = False
+    if not output:
+        success = write_to_stdout(payload)
+    else:
+        success = write_to_csv(payload, output)
+
+    if success:
+        console.print(f'Query execution time: {payload["query_ms"]}ms',
+                      highlight=False)
 
 
 if __name__ == '__main__':

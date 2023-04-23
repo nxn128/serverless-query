@@ -245,3 +245,4 @@ $RECYCLE.BIN/
 
 .dev/
 .aws-sam/
+*.csv
