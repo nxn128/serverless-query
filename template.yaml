@@ -2,30 +2,12 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: serverless query SAM template
 
-Parameters:
-  ApiStage:
-    Type: String
-    Description: Enter the name of the stage to deploy. Ex. dev, v1
-    Default: "dev"
-
 Globals:
   Function:
-    Timeout: 5
-    MemorySize: 128
+    Timeout: 120
+    MemorySize: 1024
 
 Resources:
-  QueryApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: "Query API"
-      Description: !Ref AWS::StackName
-      StageName: !Ref ApiStage
-      DefinitionBody:
-        Fn::Transform:
-          Name: AWS::Include
-          Parameters:
-            Location: ./openapi.yaml # All API endpoints should be added to the open api spec
-
   RunQueryFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -34,16 +16,17 @@ Resources:
       Runtime: python3.9
       Architectures:
         - x86_64
-      Events:
-        CatchAll:
-          Type: Api
-          Properties:
-            Path: /query
-            Method: POST
-            RestApiId: !Ref QueryApi
       Environment:
         Variables:
-          DATA_BUCKET: !Ref QueryDataBucket
+          DATA_BUCKET_NAME: !Ref QueryDataBucket
+          HOME: /tmp
+      Policies:
+        - Statement:
+          - Sid: ReadFromQueryDataBucket
+            Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource: !Sub "${QueryDataBucket.Arn}/*"
 
   QueryDataBucket:
     Type: AWS::S3::Bucket
@@ -63,8 +46,8 @@ Resources:
 
 Outputs:
   QueryApiBaseUri:
-    Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${QueryApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStage}"
+    Description: "Run query lambda"
+    Value: !Ref RunQueryFunction
   QueryDataBucket:
     Description: "Query Data bucket"
     Value: !Ref QueryDataBucket
