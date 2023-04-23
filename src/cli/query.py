@@ -64,15 +64,16 @@ def query(query, limit):
     payload = json.loads(json.loads(res['Payload'].read()))
 
     result_table = Table(
-        show_header=False,
+        title="Query Results",
+        show_header=True,
         show_lines=True,
-        row_styles=["yellow"])
+        row_styles=["bold yellow"])
     for i, row in enumerate(payload):
         # ensure all data items are strings for printing
         str_row_data = [str(x) for x in row]
         result_table.add_row(*str_row_data)
 
-    console.print(result_table)
+    console.print(result_table, justify='center')
 
 
 if __name__ == '__main__':
