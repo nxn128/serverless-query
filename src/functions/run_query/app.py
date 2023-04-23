@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import date, datetime
 from duckdb import DuckDBPyConnection, connect
 
@@ -57,18 +58,21 @@ SET s3_region='us-east-2';
 """)
 
 
-def run_query(query: Query) -> list:
+def run_query(query: Query) -> dict:
     print(f'executing query: {query.sql} with row limit: {query.limit}')
     raw = db_conn.execute(query.sql)
+    start = time.time_ns()
     res = raw.fetchmany(query.limit)
-    cols = [x[0] for x in raw.description]
-    # add column names to end because it's faster
-    # than inserting in the beginning
-    res.append(cols)
+    elapsed_ms = (time.time_ns() - start) / 10**6
+    res = {
+        "results": res,
+        "column_names": [x[0] for x in raw.description],
+        "query_ms": elapsed_ms
+    }
     return res
 
 
-def lambda_handler(event: dict, _) -> list:
+def lambda_handler(event: dict, _) -> str:
     try:
         query = Query(event.get('query', None),
                       event.get('limit', DEFAULT_ROWS))

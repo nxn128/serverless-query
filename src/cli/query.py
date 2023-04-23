@@ -61,21 +61,24 @@ def query(query, limit):
         "serverless-query-RunQueryFunction",
         data,
         True)
+
     payload = json.loads(json.loads(res['Payload'].read()))
 
     result_table = Table(
-        *payload[len(payload) - 1],
+        *payload['column_names'],
         title="Query Results",
         show_header=True,
         show_lines=True,
         row_styles=["bold yellow"])
-    # we don't add the last row as that is actually the headers
-    for i in range(0, len(payload) - 1):
+
+    for row in payload["results"]:
         # ensure all data items are strings for printing
-        str_row_data = [str(x) for x in payload[i]]
+        str_row_data = [str(x) for x in row]
         result_table.add_row(*str_row_data)
 
     console.print(result_table, justify='center')
+    console.print(f'query execution time: {payload["query_ms"]}ms',
+                  highlight=False)
 
 
 if __name__ == '__main__':
