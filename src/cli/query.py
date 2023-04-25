@@ -6,6 +6,7 @@ import boto3
 import click
 import csv
 import json
+from prompt_toolkit import PromptSession
 from rich.console import Console
 from rich.table import Table
 
@@ -68,7 +69,8 @@ def write_to_stdout(payload: dict) -> bool:
             show_header=True,
             show_lines=True,
             row_styles=['bold yellow'],
-            header_style='bold')
+            header_style='bold',
+        )
 
         for row in json.loads(payload['results']):
             # ensure all data items are strings for printing
@@ -87,8 +89,12 @@ def write_to_stdout(payload: dict) -> bool:
 def write_to_csv(payload: dict, filename: str) -> bool:
     try:
         with open(filename, 'w') as f:
-            writer = csv.writer(f, delimiter=',',
-                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            writer = csv.writer(
+                f,
+                delimiter=',',
+                quotechar='|',
+                quoting=csv.QUOTE_MINIMAL,
+            )
             writer.writerow(payload["column_names"])
             writer.writerows(json.loads(payload['results']))
         console.print(f'Output written to {filename}',
@@ -103,16 +109,63 @@ def write_to_csv(payload: dict, filename: str) -> bool:
         return False
 
 
+# https://python-prompt-toolkit.readthedocs.io/en/master/pages/tutorials/repl.html
+def run_query_repl():
+    session = PromptSession()
+
+    while True:
+        try:
+            text = session.prompt('> ')
+        except KeyboardInterrupt:
+            continue
+        except EOFError:
+            break
+
+        res = invoke_lambda(text, 1000)
+        payload = json.loads(res['Payload'].read())
+        if write_to_stdout(payload):
+            console.print(
+                f'Query execution time: {payload["query_ms"]}ms',
+                highlight=False
+            )
+    console.print("Goodbye!")
+
+
 @click.command()
-@click.option('--query', '-q', default='', help='SQL Query for execution')
-@click.option('--limit', '-l', default=10,
-              help='Number of rows to return, max 1000')
-@click.option('--output', '-o', default=None, help='Output file (csv)')
-def query(query: str, limit: int, output: str):
+@click.option(
+    '--query',
+    '-q',
+    default='',
+    help='SQL Query for execution',
+)
+@click.option(
+    '--limit',
+    '-l',
+    default=10,
+    help='Number of rows to return, max 1000',
+)
+@click.option(
+    '--interactive',
+    '-i',
+    default=False,
+    is_flag=True,
+    help='Interactive REPL',
+)
+@click.option(
+    '--output',
+    '-o',
+    default=None,
+    help='Output file (csv)'
+)
+def query(query: str, limit: int, interactive: bool, output: str):
     console.print(f'Executing query {query} with max rows returned = ' +
                   f'{min(limit, MAX_ROWS)}',
                   style='bold blue',
                   highlight=False)
+
+    if interactive:
+        run_query_repl()
+        return
 
     res = invoke_lambda(query, limit)
 
