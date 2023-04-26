@@ -1,130 +1,119 @@
 # serverless-query
 
-This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
+The serverless query app allows users to run simple queries against parquet files in S3.
 
-- hello_world - Code for the application's Lambda function.
-- events - Invocation events that you can use to invoke the function.
-- tests - Unit tests for the application code.
-- template.yaml - A template that defines the application's AWS resources.
+## Setup
+To make setup as easy as possible it is recommended to leverage
+the provided docker images and helper scripts. Of course docker is not
+required to run the app but detailing the individual steps is out of scope
+for this document. For a hint look at both the Dockerfiles in the root directory.
 
-The application uses several AWS resources, including Lambda functions and an API Gateway API. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
+It is recommended you proceed through this section in order.
 
-If you prefer to use an integrated development environment (IDE) to build and test your application, you can use the AWS Toolkit.
-The AWS Toolkit is an open source plug-in for popular IDEs that uses the SAM CLI to build and deploy serverless applications on AWS. The AWS Toolkit also adds a simplified step-through debugging experience for Lambda function code. See the following links to get started.
+### Prerequisites
+* AWS Account
+* AWS Access Key with appropriate permissions (for now AdministratorAccess,
+  though actual permissions required are more limited... IAM/S3/Lambda/CloudFormation/etc.)
+* Docker
+* AWS Access Key environment variables must be set.
+  While there are other ways to set your aws creds (such as ~/.aws/credentials),
+  these instructions assume that you have these set as environment variables
+  to make running the docker commands simplier.
+* git clone the repository: `git clone git@github.com:nxn128/serverless-query.git`
 
-* [CLion](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [GoLand](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [IntelliJ](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [WebStorm](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [Rider](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [PhpStorm](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [PyCharm](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [RubyMine](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [DataGrip](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [VS Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html)
-* [Visual Studio](https://docs.aws.amazon.com/toolkit-for-visual-studio/latest/user-guide/welcome.html)
+### Deploy Infrastructure
+The infrastructure is defined with AWS SAM (CloudFormation)
+To build and deploy the infrastructure (lambda functions, s3 bucket):
+1. Run the helper script `sh ./build_and_deploy_infra.sh` from the root of the project.
+   This checks you have your AWS envars set up and builds and runs the `deploy.Dockerfile`
+   in the root of the project. This runs `sam build` and `sam deploy`.
+1. Take a note of the `QueryDataBucket` output value since you will use that in your queries
+   when specifying where you are selecting `FROM`.
 
-## Deploy the sample application
+### Build CLI
+Run sh ./build_cli.sh from the root of the project to build the cli docker image
 
-The Serverless Application Model Command Line Interface (SAM CLI) is an extension of the AWS CLI that adds functionality for building and testing Lambda applications. It uses Docker to run your functions in an Amazon Linux environment that matches Lambda. It can also emulate your application's build environment and API.
+### Upload Data
+The CLI provides functionality to allow you to upload data files from a URL into the `QueryDataBucket`. Local file uploads are not supported at this time.
 
-To use the SAM CLI, you need the following tools.
+For example if you wish to query `https://github.com/cwida/duckdb-data/releases/download/v1.0/taxi_2019_04.parquet` you should run the following command:
 
-* SAM CLI - [Install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-* [Python 3 installed](https://www.python.org/downloads/)
-* Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community)
+`docker run -t -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY cli python upload.py -f https://github.com/cwida/duckdb-data/releases/download/v1.0/taxi_2019_04.parquet -t uploads/taxi_2019_04.parquet`
 
-To build and deploy your application for the first time, run the following in your shell:
+See the [Parameters](#parameters) section for more details on upload parameters.
 
-```bash
-sam build --use-container
-sam deploy --guided
-```
+### Query Data
+The CLI provides functionality to allow you to query the data and display the results in a few ways.
 
-The first command will build the source of your application. The second command will package and deploy your application to AWS, with a series of prompts:
+Assuming you have uploaded the file above from the **Upload Data** section,
+you query it and output results to the terminal with the following command,
+replacing `<QUERYDATABUCKET OUTPUT VAL>` with the bucket name from the `QueryDataBucket` output.
 
-* **Stack Name**: The name of the stack to deploy to CloudFormation. This should be unique to your account and region, and a good starting point would be something matching your project name.
-* **AWS Region**: The AWS region you want to deploy your app to.
-* **Confirm changes before deploy**: If set to yes, any change sets will be shown to you before execution for manual review. If set to no, the AWS SAM CLI will automatically deploy application changes.
-* **Allow SAM CLI IAM role creation**: Many AWS SAM templates, including this example, create AWS IAM roles required for the AWS Lambda function(s) included to access AWS services. By default, these are scoped down to minimum required permissions. To deploy an AWS CloudFormation stack which creates or modifies IAM roles, the `CAPABILITY_IAM` value for `capabilities` must be provided. If permission isn't provided through this prompt, to deploy this example you must explicitly pass `--capabilities CAPABILITY_IAM` to the `sam deploy` command.
-* **Save arguments to samconfig.toml**: If set to yes, your choices will be saved to a configuration file inside the project, so that in the future you can just re-run `sam deploy` without parameters to deploy changes to your application.
+`docker run -t -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY cli python query.py -q "SELECT * FROM 's3://<QUERYDATABUCKET OUTPUT VAL>/uploads/taxi_2019_04.parquet';" -l 10`
 
-You can find your API Gateway Endpoint URL in the output values displayed after deployment.
+This will also output the runtime of the query in ms.
 
-## Use the SAM CLI to build and test locally
+See the [Parameters](#parameters) section for more details on query options.
 
-Build your application with the `sam build --use-container` command.
+## Parameters
+### query.py
+The following parameters are available to the query.py script:
+* **--query** or **-q**: SQL query to execute in a quoted string
+* **--limit** or **-l**: Limits the max number of rows to return (capped at 1000)
+* **--output** or **-o**: Filename to write output in csv format
+* **--interactive** or **-i**: Extremely primative REPL for executing queries interactively at a prompt
 
-```bash
-serverless-query$ sam build --use-container
-```
+### upload.py
+The following parameters are available to the upload.py script:
+* **--from-url** or **-f**: URL to retrieve data for upload from
+* **--to** or **-t**: Path and filename of where to upload data.
+  Bucket name is not configurable.
 
-The SAM CLI installs dependencies defined in `hello_world/requirements.txt`, creates a deployment package, and saves it in the `.aws-sam/build` folder.
+## Docker command details
+When running a docker command there are a number of parameters that may be
+confusing. While the definitive definitions can be found in the docker
+documentation, a brief explaination of the run command parameters above:
 
-Test a single function by invoking it directly with a test event. An event is a JSON document that represents the input that the function receives from the event source. Test events are included in the `events` folder in this project.
+* **-t**: The output is written to the terminal. This indicates things like
+  including color codes
+* **-e**: Set this environment variable in the docker container. Because there
+  is no value specified this indicates to grab the value from your current session
+  and inject that.
 
-Run functions locally and invoke them with the `sam local invoke` command.
+## Architecture
+The architecture is currently very simple and at a high-level
+can be seen in the diagram below:
 
-```bash
-serverless-query$ sam local invoke HelloWorldFunction --event events/event.json
-```
+![Serverless query architecture](./query.png?raw=true "Serverless query architecture")
 
-The SAM CLI can also emulate your application's API. Use the `sam local start-api` to run the API locally on port 3000.
+Top-level dependencies:
 
-```bash
-serverless-query$ sam local start-api
-serverless-query$ curl http://localhost:3000/
-```
+* boto3: AWS SDK
+* duckDb: DB Engine
+* click: CLI
+* rich: Table display in terminal
+* prompt_toolkit: REPL
+* requests: Download external data from url
+* pytest: unit tests
 
-The SAM CLI reads the application template to determine the API's routes and the functions that they invoke. The `Events` property on each function's definition includes the route and method for each path.
+## Limitations
+* Queries can currently return no more than 1000 records.
+* Pagination is "manual" in that while limit can be passed in
+  offset cannot currently and all records gather are returned
+  (up to the 1000 record max)
 
-```yaml
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-```
 
-## Add a resource to your application
-The application template uses AWS Serverless Application Model (AWS SAM) to define application resources. AWS SAM is an extension of AWS CloudFormation with a simpler syntax for configuring common serverless application resources such as functions, triggers, and APIs. For resources not included in [the SAM specification](https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md), you can use standard [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html) resource types.
+## Future improvements
+In no particular order:
 
-## Fetch, tail, and filter Lambda function logs
-
-To simplify troubleshooting, SAM CLI has a command called `sam logs`. `sam logs` lets you fetch logs generated by your deployed Lambda function from the command line. In addition to printing the logs on the terminal, this command has several nifty features to help you quickly find the bug.
-
-`NOTE`: This command works for all AWS Lambda functions; not just the ones you deploy using SAM.
-
-```bash
-serverless-query$ sam logs -n HelloWorldFunction --stack-name serverless-query --tail
-```
-
-You can find more information and examples about filtering Lambda function logs in the [SAM CLI Documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html).
-
-## Tests
-
-Tests are defined in the `tests` folder in this project. Use PIP to install the test dependencies and run tests.
-
-```bash
-serverless-query$ pip install -r tests/requirements.txt --user
-# unit test
-serverless-query$ python -m pytest tests/unit -v
-# integration test, requiring deploying the stack first.
-# Create the env variable AWS_SAM_STACK_NAME with the name of the stack we are testing
-serverless-query$ AWS_SAM_STACK_NAME=<stack-name> python -m pytest tests/integration -v
-```
-
-## Cleanup
-
-To delete the sample application that you created, use the AWS CLI. Assuming you used your project name for the stack name, you can run the following:
-
-```bash
-sam delete --stack-name serverless-query
-```
-
-## Resources
-
-See the [AWS SAM developer guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) for an introduction to SAM specification, the SAM CLI, and serverless application concepts.
-
-Next, you can use AWS Serverless Application Repository to deploy ready to use Apps that go beyond hello world samples and learn how authors developed their applications: [AWS Serverless Application Repository main page](https://aws.amazon.com/serverless/serverlessrepo/)
+* Support unlimited query size (would involve multiple lambda calls and lambda streaming output). Interestingly: https://aws.amazon.com/blogs/compute/introducing-aws-lambda-response-streaming/.
+* Syntax highlighting / parsing in the REPL
+* Query "replay", save queries and allow quick re-running (though better UI would likely be a better choice)
+* Report telemetry data out
+* Support local file uploads
+* Web UI layer for data visualization / "notebook" support (how would this differ from Jupyter notebooks that can already connect to duckdb?)
+* More / better unit tests
+* Integration tests
+* Package the CLI so it can be installed by pip
+* Paging could be improved (though what is the use case for tabbing through terminal data? If we have pages just export to csv or something else for analysis). Currently relies on user to submit query with LIMIT and OFFSET.
+* Perhaps changing from `fetchmany` to `fetch_df` to return more metadata with records
