@@ -2,7 +2,6 @@
 Serverless Query CLI
 """
 
-import boto3
 import click
 import csv
 import json
@@ -10,58 +9,17 @@ from prompt_toolkit import PromptSession
 from rich.console import Console
 from rich.table import Table
 
+from smallquery.functions.run_query.aws.lambda_wrapper import LambdaWrapper
+from smallquery.functions.run_query.model.query import Query
+
 MAX_ROWS = 1000
+QUERY_FUNCTION_NAME = 'serverless-query-RunQueryFunction'
 
 console = Console()
 
 
-# https://docs.aws.amazon.com/code-library/latest/ug/python_3_lambda_code_examples.html
-class LambdaWrapper:
-    def __init__(self, lambda_client, iam_resource):
-        self.lambda_client = lambda_client
-        self.iam_resource = iam_resource
-
-    def invoke_function(self, function_name, function_params, get_log=False):
-        """
-        Invokes a Lambda function.
-
-        :param function_name: The name of the function to invoke.
-        :param function_params: The parameters of the function as a dict.
-                                This dict is serialized to JSON before
-                                it is sent to Lambda.
-        :param get_log: When true, the last 4 KB of the execution log are
-                        included in the response.
-        :return: The response from the function invocation.
-        """
-        try:
-            response = self.lambda_client.invoke(
-                FunctionName=function_name,
-                Payload=json.dumps(function_params),
-                LogType='Tail' if get_log else 'None')
-        except boto3.ClientError:
-            console.print(f'Unable to invoke function {function_name}',
-                          style="bold red")
-            raise
-        return response
-
-
-def invoke_lambda(query: str, limit: int) -> str:
-    data = {
-        'query': query,
-        'limit': limit,
-    }
-
-    lambda_wrapper = LambdaWrapper(
-        boto3.client('lambda'),
-        boto3.resource('iam'))
-
-    return lambda_wrapper.invoke_function(
-        'serverless-query-RunQueryFunction',
-        data,
-        True)
-
-
 def write_to_stdout(payload: dict) -> bool:
+    console.log(f'dude: {json.dumps(payload)}')
     try:
         result_table = Table(
             *payload['column_names'],
@@ -97,6 +55,7 @@ def write_to_csv(payload: dict, filename: str) -> bool:
             )
             writer.writerow(payload["column_names"])
             writer.writerows(json.loads(payload['results']))
+
         console.print(f'Output written to {filename}',
                       style='bold green',
                       highlight=False)
@@ -121,7 +80,9 @@ def run_query_repl():
         except EOFError:
             break
 
-        res = invoke_lambda(text, 1000)
+        data = Query(text, 1000).as_dict()
+        lambda_wrapper = LambdaWrapper()
+        res = lambda_wrapper.invoke_function(QUERY_FUNCTION_NAME, data, True)
         payload = json.loads(res['Payload'].read())
         if write_to_stdout(payload):
             console.print(
@@ -158,16 +119,20 @@ def run_query_repl():
     help='Output file (csv)'
 )
 def query(query: str, limit: int, interactive: bool, output: str):
-    console.print(f'Executing query {query} with max rows returned = ' +
-                  f'{min(limit, MAX_ROWS)}',
-                  style='bold blue',
-                  highlight=False)
-
     if interactive:
         run_query_repl()
         return
+    else:
+        console.print(
+            f'Executing query {query} with max rows returned = ' +
+            f'{min(limit, MAX_ROWS)}',
+            style='bold blue',
+            highlight=False,
+        )
 
-    res = invoke_lambda(query, limit)
+    data = Query(query, limit).as_dict()
+    lambda_wrapper = LambdaWrapper()
+    res = lambda_wrapper.invoke_function(QUERY_FUNCTION_NAME, data, True)
 
     payload = json.loads(res['Payload'].read())
     success = False
