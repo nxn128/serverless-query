@@ -1,4 +1,7 @@
 class Query:
+    """
+    Query data model
+    """
     MAX_ROWS = 1000
 
     def __init__(self, sql: str, limit: int):
@@ -10,13 +13,22 @@ class Query:
 
     @property
     def sql(self) -> str:
+        """
+        SQL to execute
+        """
         return self._sql
 
     @property
     def limit(self) -> int:
+        """
+        Max rows to return
+        """
         return self._limit
 
     def as_dict(self) -> dict:
+        """
+        Returns class properties as dict
+        """
         return {
             'query': self._sql,
             'limit': self._limit,

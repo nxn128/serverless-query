@@ -27,7 +27,8 @@ def results_serializer(data):
 
 def ensure_db_connected():
     """
-    Ensures there is a valid db connection.
+    Ensures there is a valid db connection since we are using a global.
+    It will only be valid on warm starts.
     """
     global db_conn
     if db_conn is None:
@@ -44,6 +45,10 @@ SET s3_region='us-east-2';
 
 
 def run_query(query: Query) -> dict:
+    """
+    Runs the query on the DuckDB engine and returns a dict with the data, col names
+    and elapsed query time
+    """
     print(f'executing query: {query.sql} with row limit: {query.limit}')
     raw = db_conn.execute(query.sql)
     start = time.time_ns()
@@ -59,6 +64,9 @@ def run_query(query: Query) -> dict:
 
 
 def lambda_handler(event: dict, _) -> str:
+    """
+    Called by AWS lambda
+    """
     try:
         query = Query(event.get('query', None),
                       event.get('limit', DEFAULT_ROWS))

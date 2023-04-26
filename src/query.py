@@ -19,6 +19,9 @@ console = Console()
 
 
 def write_to_stdout(payload: dict) -> bool:
+    """
+    Writes output to the terminal
+    """
     try:
         result_table = Table(
             *payload['column_names'],
@@ -44,6 +47,9 @@ def write_to_stdout(payload: dict) -> bool:
 
 
 def write_to_csv(payload: dict, filename: str) -> bool:
+    """
+    Writes output to the filename in csv format
+    """
     try:
         with open(filename, 'w') as f:
             writer = csv.writer(
@@ -69,6 +75,9 @@ def write_to_csv(payload: dict, filename: str) -> bool:
 
 # https://python-prompt-toolkit.readthedocs.io/en/master/pages/tutorials/repl.html
 def run_query_repl():
+    """
+    Runs interactive REPL
+    """
     session = PromptSession()
 
     while True:
@@ -118,6 +127,9 @@ def run_query_repl():
     help='Output file (csv)'
 )
 def query(query: str, limit: int, interactive: bool, output: str):
+    """
+    CLI entry point function
+    """
     if interactive:
         run_query_repl()
         return

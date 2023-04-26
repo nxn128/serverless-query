@@ -23,6 +23,9 @@ UPLOAD_FUNCTION_NAME = 'serverless-query-njn-UploadDataFunction'
     help='Bucket path and filename'
 )
 def upload(from_url: str, to: str):
+    """
+    CLI entry point function
+    """
     data = Upload(from_url, to).as_dict()
     lambda_wrapper = LambdaWrapper()
     lambda_wrapper.invoke_function(UPLOAD_FUNCTION_NAME, data, True)
