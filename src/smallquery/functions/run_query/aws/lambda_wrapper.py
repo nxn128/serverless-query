@@ -1,12 +1,9 @@
 import boto3
 import json
-from rich.console import Console
 
 
 # https://docs.aws.amazon.com/code-library/latest/ug/python_3_lambda_code_examples.html
 class LambdaWrapper:
-    console = Console()
-
     def __init__(self):
         self.lambda_client = boto3.client('lambda')
         self.iam_resource = boto3.resource('iam')
@@ -29,8 +26,6 @@ class LambdaWrapper:
                 Payload=json.dumps(function_params),
                 LogType='Tail' if get_log else 'None')
         except Exception:
-            LambdaWrapper.console.print(
-                f'Unable to invoke function {function_name}',
-                style="bold red")
+            print(f'Unable to invoke function {function_name}')
             raise
         return response
