@@ -12,7 +12,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: serverless-query-RunQueryFunction
-      CodeUri: src/functions/run_query/
+      CodeUri: src/smallquery/functions/run_query/
       Handler: app.lambda_handler
       Runtime: python3.9
       Architectures:
