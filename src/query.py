@@ -13,13 +13,12 @@ from smallquery.functions.run_query.aws.lambda_wrapper import LambdaWrapper
 from smallquery.functions.run_query.model.query import Query
 
 MAX_ROWS = 1000
-QUERY_FUNCTION_NAME = 'serverless-query-RunQueryFunction'
+QUERY_FUNCTION_NAME = 'serverless-query-njn-RunQueryFunction'
 
 console = Console()
 
 
 def write_to_stdout(payload: dict) -> bool:
-    console.log(f'dude: {json.dumps(payload)}')
     try:
         result_table = Table(
             *payload['column_names'],

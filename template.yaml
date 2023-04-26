@@ -11,7 +11,7 @@ Resources:
   RunQueryFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: serverless-query-RunQueryFunction
+      FunctionName: serverless-query-njn-RunQueryFunction
       CodeUri: src/smallquery/functions/run_query/
       Handler: app.lambda_handler
       Runtime: python3.9
@@ -27,6 +27,26 @@ Resources:
             Effect: Allow
             Action:
               - s3:GetObject
+            Resource: !Sub "${QueryDataBucket.Arn}/*"
+  UploadDataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: serverless-query-njn-UploadDataFunction
+      CodeUri: src/smallquery/functions/upload_data/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          DATA_BUCKET_NAME: !Ref QueryDataBucket
+      Policies:
+        - Statement:
+          - Sid: WriteToQueryDataBucket
+            Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:PutObjectACL
             Resource: !Sub "${QueryDataBucket.Arn}/*"
 
   QueryDataBucket:
