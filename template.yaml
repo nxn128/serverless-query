@@ -66,9 +66,12 @@ Resources:
           - ObjectOwnership: ObjectWriter
 
 Outputs:
-  QueryApiBaseUri:
+  RunQueryFunction:
     Description: "Run query lambda"
     Value: !Ref RunQueryFunction
+  UploadDataFunction:
+    Description: "Upload data lambda"
+    Value: !Ref UploadDataFunction
   QueryDataBucket:
     Description: "Query Data bucket"
     Value: !Ref QueryDataBucket

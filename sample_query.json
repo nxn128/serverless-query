@@ -1,4 +1,4 @@
 {
-    "query": "SELECT * FROM 's3://query-data-baf15f90-e11f-11ed-b569-06aa137e2733/manual/taxi_2019_04.parquet';",
+    "query": "SELECT * FROM 's3://<YOUR_DATA_BUCKET>/manual/taxi_2019_04.parquet';",
     "limit": 5
 }
