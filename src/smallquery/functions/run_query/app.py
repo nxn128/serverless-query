@@ -1,4 +1,5 @@
 import json
+import os
 import time
 from datetime import date, datetime
 from duckdb import DuckDBPyConnection, connect
@@ -37,10 +38,10 @@ def ensure_db_connected():
         # lambda has correct context and IAM roles
         # commands here are per:
         # https://duckdb.org/docs/guides/import/s3_import.html
-        db_conn.execute("""
+        db_conn.execute(f"""
 INSTALL httpfs;
 LOAD httpfs;
-SET s3_region='us-east-2';
+SET s3_region='{os.getenv("AWS_DEFAULT_REGION")}';
 """)
 
 
