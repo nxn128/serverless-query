@@ -65,9 +65,23 @@ See the [Parameters](#parameters) section for more details on query options.
 ### query.py
 The following parameters are available to the query.py script:
 * **--query** or **-q**: SQL query to execute in a quoted string
+
 * **--limit** or **-l**: Limits the max number of rows to return (capped at 1000)
-* **--output** or **-o**: Filename to write output in csv format
-* **--interactive** or **-i**: Extremely primative REPL for executing queries interactively at a prompt
+
+* **--output** or **-o**: Filename to write output in csv format. Note that if you are running in a docker container
+  you will need to create a directory and mount it and output to a dir on the container. In other words, something like:
+  ```
+  mkdir csv
+
+  docker run -v "$(pwd)/csv:/csv"  -t -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY cli python query.py -q "SELECT pickup_at, fare_amount, mta_tax FROM 's3://<QUERYDATABUCKET_OUTPUT_VAL>/uploads/taxi_2019_04.parquet';" -l 10 -o /csv/export1.csv
+  ```
+  And then you'd see your output locally at `your current dir/csv/export1.csv`
+
+* **--interactive** or **-i**: Extremely primative REPL for executing queries interactively at a prompt.
+  Note that if running in Docker specify the -i flag after run, in other words:
+  ```
+  docker run -it -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY cli python query.py -i
+  ```
 
 ### upload.py
 The following parameters are available to the upload.py script:
