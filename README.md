@@ -5,8 +5,8 @@ The serverless query app allows users to run simple queries against parquet file
 ## Setup
 To make setup as easy as possible it is recommended to leverage
 the provided docker images and helper scripts. Of course docker is not
-required to run the app but detailing the individual steps is out of scope
-for this document. For a hint look at both the Dockerfiles in the root directory.
+required to run the app see the [Advanced Setup](#advanced-setup) section
+for details.
 
 It is recommended you proceed through this section in order.
 
@@ -14,12 +14,13 @@ It is recommended you proceed through this section in order.
 * AWS Account
 * AWS Access Key with appropriate permissions (for now AdministratorAccess,
   though actual permissions required are more limited... IAM/S3/Lambda/CloudFormation/etc.)
-* Docker
+* Docker must be installed and running
 * AWS Access Key environment variables must be set.
   While there are other ways to set your aws creds (such as ~/.aws/credentials),
   these instructions assume that you have these set as environment variables
   to make running the docker commands simplier.
-* git clone the repository: `git clone git@github.com:nxn128/serverless-query.git`
+* `git` is installed
+* git clone the repository: `git clone git@github.com:nxn128/serverless-query.git` to a local directory
 
 ### Deploy Infrastructure
 The infrastructure is defined with AWS SAM (CloudFormation)
@@ -100,7 +101,11 @@ Top-level dependencies:
 * Queries can currently return no more than 1000 records.
 * Pagination is "manual" in that while limit can be passed in
   offset cannot currently and all records gather are returned
-  (up to the 1000 record max)
+  (up to the 1000 record max).
+* When printing to the terminal, only the visible area is printed to,
+  so some columns may not display if the table is wide. If the screen
+  is expanded the query needs to be re-run. A min-width is set on the columns
+  to allow the user to recognize some of the data.
 
 
 ## Future improvements
@@ -118,3 +123,32 @@ In no particular order:
 * Paging could be improved (though what is the use case for tabbing through terminal data? If we have pages just export to csv or something else for analysis). Currently relies on user to submit query with LIMIT and OFFSET.
 * Perhaps changing from `fetchmany` to `fetch_df` to return more metadata with records
 * Add CI/CD pipeline
+
+
+## Advanced Setup
+If you wish to install on your local machine instead of using the docker images you will need the following...
+
+### Prerequisites
+* Install python 3.9.6 ([pyenv](https://github.com/pyenv/pyenv) highly recommended
+* AWS Account
+* AWS Access Key with appropriate permissions (for now AdministratorAccess,
+  though actual permissions required are more limited... IAM/S3/Lambda/CloudFormation/etc.)
+* Install the [AWS CLI](https://aws.amazon.com/cli/)
+* Install [AWS SAM](https://aws.amazon.com/serverless/sam/)
+* Ensure `git` is installed
+* run `git clone git@github.com:nxn128/serverless-query.git`
+
+Once you are ready, you can deploy the infra by navigating to the directory where you
+cloned the repo and running:
+* `sam build && sam deploy`
+
+To get ready to run the CLI scripts:
+* (Optional) Set up a [virtual environment](https://docs.python.org/3/library/venv.html)
+   to prevent package conflicts
+* run `pip3 install -r requirements.txt` from this top-level directory
+* ensure you have an `AWS_DEFAULT_REGION` set to `us-east-2`
+
+To run the `query` or `upload` scripts you can run `python src/query.py ...` or `python src/upload.py ...`
+
+For details on commands to run to get started see the [Upload Data](upload-data) section
+modifying the commmands to start the same as above vs calling `docker run ...`.
