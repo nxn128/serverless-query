@@ -55,12 +55,11 @@ def run_query(query: Query) -> dict:
     res = raw.fetchmany(query.limit)
     elapsed_ms = (time.time_ns() - start) / 10**6  # convert from ns to ms
 
-    res = {
+    return {
         "results": json.dumps(res, default=results_serializer),
         "column_names": [x[0] for x in raw.description],
         "query_ms": elapsed_ms
     }
-    return res
 
 
 def lambda_handler(event: dict, _) -> str:
@@ -75,4 +74,4 @@ def lambda_handler(event: dict, _) -> str:
 
     except Exception as e:
         print(f'error running query: {e}')
-        return []
+        raise

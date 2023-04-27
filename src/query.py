@@ -23,6 +23,12 @@ def write_to_stdout(payload: dict) -> bool:
     Writes output to the terminal
     """
     try:
+        if 'errorMessage' in payload:
+            console.print(payload['errorMessage'],
+                          style='bold red',
+                          highlight=False)
+            return False
+
         result_table = Table(
             *payload['column_names'],
             title='Query Results',
