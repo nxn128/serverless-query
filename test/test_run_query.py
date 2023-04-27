@@ -14,8 +14,8 @@ def run_query_event():
     Generates Run Query event
     """
     return {
-        "query": "select * from unit/test.parquet",
-        "limit": 10,
+        'query': 'select * from unit/test.parquet',
+        'limit': 10,
     }
 
 

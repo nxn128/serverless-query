@@ -23,7 +23,7 @@ def results_serializer(data):
     if isinstance(data, (datetime, date)):
         # TODO: timezone concerns?
         return data.isoformat()
-    raise TypeError("Type %s not serializable" % type(data))
+    raise TypeError('Type %s not serializable' % type(data))
 
 
 def ensure_db_connected():
@@ -41,7 +41,7 @@ def ensure_db_connected():
         db_conn.execute(f"""
 INSTALL httpfs;
 LOAD httpfs;
-SET s3_region='{os.getenv("AWS_DEFAULT_REGION")}';
+SET s3_region='{os.getenv('AWS_DEFAULT_REGION')}';
 """)
 
 
@@ -57,9 +57,9 @@ def run_query(query: Query) -> dict:
     elapsed_ms = (time.time_ns() - start) / 10**6  # convert from ns to ms
 
     return {
-        "results": json.dumps(res, default=results_serializer),
-        "column_names": [x[0] for x in raw.description],
-        "query_ms": elapsed_ms
+        'results': json.dumps(res, default=results_serializer),
+        'column_names': [x[0] for x in raw.description],
+        'query_ms': elapsed_ms
     }
 
 

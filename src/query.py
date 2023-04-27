@@ -67,7 +67,7 @@ def write_to_csv(payload: dict, filename: str) -> bool:
                 quotechar='|',
                 quoting=csv.QUOTE_MINIMAL,
             )
-            writer.writerow(payload["column_names"])
+            writer.writerow(payload['column_names'])
             writer.writerows(json.loads(payload['results']))
 
         console.print(f'Output written to {filename}',
@@ -106,7 +106,7 @@ def run_query_repl():
                 f'Query execution time: {payload["query_ms"]}ms',
                 highlight=False
             )
-    console.print("Goodbye!")
+    console.print('Goodbye!')
 
 
 @click.command()

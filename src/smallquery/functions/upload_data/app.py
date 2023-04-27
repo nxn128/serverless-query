@@ -11,8 +11,8 @@ def lambda_handler(event: dict, _) -> str:
         s3Wrapper = S3Wrapper()
         s3Wrapper.uploadFromUrl(upload.from_url, upload.to_path)
 
-        return "ok"
+        return 'ok'
 
     except Exception as e:
         print(f'error uploading data: {e}')
-        return "error"
+        return 'error'

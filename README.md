@@ -82,6 +82,7 @@ The following parameters are available to the query.py script:
   ```
   docker run -it -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY cli python query.py -i
   ```
+  CTRL-D exits
 
 ### upload.py
 The following parameters are available to the upload.py script:
