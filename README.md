@@ -136,7 +136,7 @@ To run the tests run `pytest` from the base directory.
 In no particular order:
 
 * Support unlimited query size (would involve multiple lambda calls and lambda streaming output). Interestingly: https://aws.amazon.com/blogs/compute/introducing-aws-lambda-response-streaming/ but there are still limits in size per function execution.
-* Syntax highlighting / parsing in the REPL
+* Syntax highlighting / parsing in the REPL and increased parsing / validation on any input
 * Query "replay", save queries and allow quick re-running (though better UI would likely be a better choice)
 * Report telemetry data out
 * Support local file uploads
@@ -145,10 +145,11 @@ In no particular order:
 * Integration tests
 * Package the CLI so it can be installed by pip
 * Paging could be improved (though what is the use case for tabbing through terminal data? If we have pages just export to csv or something else for analysis). Currently relies on user to submit query with LIMIT and OFFSET.
-* Perhaps changing from `fetchmany` to `fetch_df` to return more metadata with records
+* Perhaps changing from `fetchmany` to `fetch_df` to return more metadata with records, possibly compress records, etc
 * Add CI/CD pipeline with build, test, deploy, autoversioning
 * Possibly create API Gateway layer, to make it easier for distributed scripts to call in be authenticated, throttled, etc. May not be relevant depending on where
   all artifacts live.
+* Implement lambda layers for shared functions to ensure code is DRY and imports make sense
 
 
 ## Advanced Setup
