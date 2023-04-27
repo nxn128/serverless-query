@@ -4,9 +4,10 @@ The serverless query app allows users to run simple queries against parquet file
 
 ## Setup
 To make setup as easy as possible it is recommended to leverage
-the provided docker images and helper scripts. Of course docker is not
-required to run the app see the [Advanced Setup](#advanced-setup) section
-for details.
+the provided docker images and helper scripts.
+
+If docker is not feasible please see the [Advanced Setup](#advanced-setup) section
+for more information on what needs to be installed (or peek at the Dockerfiles).
 
 It is recommended you proceed through this section in order.
 
@@ -15,7 +16,7 @@ It is recommended you proceed through this section in order.
 * AWS Access Key with appropriate permissions (for now AdministratorAccess,
   though actual permissions required are more limited... IAM/S3/Lambda/CloudFormation/etc.)
 * Docker must be installed and running
-* AWS Access Key environment variables must be set.
+* AWS Access Key environment variables must be set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
   While there are other ways to set your aws creds (such as ~/.aws/credentials),
   these instructions assume that you have these set as environment variables
   to make running the docker commands simplier.
@@ -32,7 +33,7 @@ To build and deploy the infrastructure (lambda functions, s3 bucket):
    when specifying where you are selecting `FROM`.
 
 ### Build CLI
-Run sh ./build_cli.sh from the root of the project to build the cli docker image
+Run `sh ./build_cli.sh` from the root of the project to build the cli docker image
 
 ### Upload Data
 The CLI provides functionality to allow you to upload data files from a URL into the `QueryDataBucket`. Local file uploads are not supported at this time.
@@ -49,7 +50,7 @@ See the [Parameters](#parameters) section for more details on upload parameters.
 The CLI provides functionality to allow you to query the data and display the results in a few ways.
 
 Assuming you have uploaded the file above from the **Upload Data** section,
-you query it and output results to the terminal with the following command,
+you can query it and output results to the terminal with the following command,
 replacing `<QUERYDATABUCKET OUTPUT VAL>` with the bucket name from the `QueryDataBucket` output.
 
 ```
@@ -108,9 +109,9 @@ To run the tests run `pytest` from the base directory.
 
 ## Limitations
 * Queries can currently return no more than 1000 records.
-* Pagination is "manual" in that while limit can be passed in
-  offset cannot currently and all records gather are returned
-  (up to the 1000 record max).
+* Pagination is "manual" in that while limit can be passed in as a parameter
+  offset cannot, but instead it currently relies on user to submit query with OFFSET.
+  All records up to 1000 rows are returned in one chunk.
 * When printing to the terminal, only the visible area is printed to,
   so some columns may not display if the table is wide. If the screen
   is expanded the query needs to be re-run. A min-width is set on the columns
@@ -120,7 +121,7 @@ To run the tests run `pytest` from the base directory.
 ## Future improvements
 In no particular order:
 
-* Support unlimited query size (would involve multiple lambda calls and lambda streaming output). Interestingly: https://aws.amazon.com/blogs/compute/introducing-aws-lambda-response-streaming/.
+* Support unlimited query size (would involve multiple lambda calls and lambda streaming output). Interestingly: https://aws.amazon.com/blogs/compute/introducing-aws-lambda-response-streaming/ but there are still limits in size per function execution.
 * Syntax highlighting / parsing in the REPL
 * Query "replay", save queries and allow quick re-running (though better UI would likely be a better choice)
 * Report telemetry data out
@@ -132,6 +133,8 @@ In no particular order:
 * Paging could be improved (though what is the use case for tabbing through terminal data? If we have pages just export to csv or something else for analysis). Currently relies on user to submit query with LIMIT and OFFSET.
 * Perhaps changing from `fetchmany` to `fetch_df` to return more metadata with records
 * Add CI/CD pipeline
+* Possibly create API Gateway layer, to make it easier for distributed scripts to call in be authenticated, throttled, etc. May not be relevant depending on where
+  all artifacts live
 
 
 ## Advanced Setup
