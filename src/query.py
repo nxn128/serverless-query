@@ -7,7 +7,7 @@ import csv
 import json
 from prompt_toolkit import PromptSession
 from rich.console import Console
-from rich.table import Table
+from rich.table import Column, Table
 
 from smallquery.functions.run_query.aws.lambda_wrapper import LambdaWrapper
 from smallquery.functions.run_query.model.query import Query
@@ -29,8 +29,11 @@ def write_to_stdout(payload: dict) -> bool:
                           highlight=False)
             return False
 
+        # set a min width so that the table is somewhat recognizable at small terminal widths
+        cols = [Column(c, min_width=10) for c in payload['column_names']]
+
         result_table = Table(
-            *payload['column_names'],
+            *cols,
             title='Query Results',
             show_header=True,
             show_lines=True,
@@ -153,6 +156,7 @@ def query(query: str, limit: int, interactive: bool, output: str):
 
     payload = json.loads(res['Payload'].read())
     success = False
+
     if not output:
         success = write_to_stdout(payload)
     else:
