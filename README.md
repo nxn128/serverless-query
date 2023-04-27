@@ -39,7 +39,9 @@ The CLI provides functionality to allow you to upload data files from a URL into
 
 For example if you wish to query `https://github.com/cwida/duckdb-data/releases/download/v1.0/taxi_2019_04.parquet` you should run the following command:
 
-`docker run -t -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY cli python upload.py -f https://github.com/cwida/duckdb-data/releases/download/v1.0/taxi_2019_04.parquet -t uploads/taxi_2019_04.parquet`
+```
+docker run -t -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY cli python upload.py -f https://github.com/cwida/duckdb-data/releases/download/v1.0/taxi_2019_04.parquet -t uploads/taxi_2019_04.parquet
+```
 
 See the [Parameters](#parameters) section for more details on upload parameters.
 
@@ -50,7 +52,9 @@ Assuming you have uploaded the file above from the **Upload Data** section,
 you query it and output results to the terminal with the following command,
 replacing `<QUERYDATABUCKET OUTPUT VAL>` with the bucket name from the `QueryDataBucket` output.
 
-`docker run -t -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY cli python query.py -q "SELECT * FROM 's3://<QUERYDATABUCKET OUTPUT VAL>/uploads/taxi_2019_04.parquet';" -l 10`
+```
+docker run -t -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY cli python query.py -q "SELECT pickup_at, fare_amount, mta_tax FROM 's3://<QUERYDATABUCKET_OUTPUT_VAL>/uploads/taxi_2019_04.parquet';" -l 10
+```
 
 This will also output the runtime of the query in ms.
 
@@ -96,6 +100,11 @@ Top-level dependencies:
 * prompt_toolkit: REPL
 * requests: Download external data from url
 * pytest: unit tests
+
+## Tests
+There are currently only two unit test in the project, more will need to be added.
+
+To run the tests run `pytest` from the base directory.
 
 ## Limitations
 * Queries can currently return no more than 1000 records.
