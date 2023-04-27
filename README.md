@@ -132,9 +132,9 @@ In no particular order:
 * Package the CLI so it can be installed by pip
 * Paging could be improved (though what is the use case for tabbing through terminal data? If we have pages just export to csv or something else for analysis). Currently relies on user to submit query with LIMIT and OFFSET.
 * Perhaps changing from `fetchmany` to `fetch_df` to return more metadata with records
-* Add CI/CD pipeline
+* Add CI/CD pipeline with build, test, deploy, autoversioning
 * Possibly create API Gateway layer, to make it easier for distributed scripts to call in be authenticated, throttled, etc. May not be relevant depending on where
-  all artifacts live
+  all artifacts live.
 
 
 ## Advanced Setup
