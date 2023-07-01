@@ -5,12 +5,14 @@ Serverless Query CLI
 import click
 import csv
 import json
+import os
 from prompt_toolkit import PromptSession
 from rich.console import Console
 from rich.table import Column, Table
 
 from smallquery.functions.run_query.aws.lambda_wrapper import LambdaWrapper
 from smallquery.functions.run_query.model.query import Query
+from smallquery.functions.upload_data.aws.s3_wrapper import S3Wrapper
 
 MAX_ROWS = 1000
 QUERY_FUNCTION_NAME = 'serverless-query-njn-RunQueryFunction'
@@ -109,6 +111,26 @@ def run_query_repl():
     console.print('Goodbye!')
 
 
+# sample query:
+# SELECT * from taxi;
+# SELECT * FROM 's3://query-data-2ade95b0-e4b4-11ed-9186-0644e23de3ed/uploads/taxi_2019_04.parquet';
+# SELECT * FROM 'uploads/taxi_2019_04.parquet';
+
+def get_table_mapping():
+    s3 = S3Wrapper()
+    md = s3.read_metadata('query-data-2ade95b0-e4b4-11ed-9186-0644e23de3ed', 'metadata/tables.json')
+    return json.loads(md)
+
+
+def format_query(query: str) -> str:
+    # friendly_name = os.getenv('QUERY_TABLE_NAME')
+    # data_location = os.getenv('QUERY_TABLE_PATH')
+
+    metadata = get_table_mapping()
+
+    return query.replace(metadata['table_name'], metadata['path'])
+
+
 @click.command()
 @click.option(
     '--query',
@@ -150,7 +172,9 @@ def query(query: str, limit: int, interactive: bool, output: str):
             highlight=False,
         )
 
-    data = Query(query, limit).as_dict()
+    formatted_query = format_query(query)
+
+    data = Query(formatted_query, limit).as_dict()
     lambda_wrapper = LambdaWrapper()
     res = lambda_wrapper.invoke_function(QUERY_FUNCTION_NAME, data, True)
 
